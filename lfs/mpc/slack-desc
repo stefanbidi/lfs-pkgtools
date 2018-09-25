@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description. Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in. You must
+# make exactly 11 lines for the formatting to be correct. It's also
+# customary to leave one space after the ':'.
+
+   |-----handy-ruler------------------------------------------------------|
+mpc: mpc (Multiple Precision Complex Library)
+mpc:
+mpc: The MPC package contains a library for the arithmetic of complex
+mpc: numbers with arbitrary high precision and correct rounding of the
+mpc: results.
+mpc:
+mpc: Homepage: http://www.multiprecision.org/
+mpc:
+mpc:
+mpc:
+mpc:

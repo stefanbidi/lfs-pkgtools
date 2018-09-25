@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# Linux From Scratch build script for intltool
+
+# Copyright 2018 Stefan Bidigaray
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+PKGNAM=intltool
+VERSION=0.51.0
+BUILD=1
+TAG=${TAG:-lfs}
+
+NUMJOBS=${NUMJOBS:-"-j$( expr $( nproc ) + 1 )"}
+
+ARCH=$( uname -m )
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp}
+PKG=$TMP/package-$PKGNAM
+SOURCES=${SOURCES:-/sources}
+
+set -e
+
+rm -rf $PKG
+mkdir -p $TMP $PKG
+cd $TMP
+rm -rf $PKGNAM-$VERSION
+tar xvf $SOURCES/$PKGNAM-$VERSION.tar.gz
+
+cd $PKGNAM-$VERSION
+chown -R root:root .
+find -L $TMP/$PKGNAM-$VERSION \
+	\( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 \
+	-o -perm 555 -o -perm 511 \) -exec chmod 755 {} \; -o \
+	\( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 \
+	-o -perm 444 -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+# Fix a warning that is caused by perl-5.22 and later:
+sed -i 's:\\\${:\\\$\\{:' intltool-update.in
+
+# Build the package
+./configure --prefix=/usr
+make $NUMJOBS
+
+# Test the results
+make check
+
+# Install the package
+make install DESTDIR=$PKG
+
+# Install the documentation files
+install -dm755 $PKG/usr/share/doc/$PKGNAM-$VERSION
+install -m644 doc/I18N-HOWTO $PKG/usr/share/doc/$PKGNAM-$VERSION/I18N-HOWTO
+install -m644 ChangeLog COPYING README \
+	$PKG/usr/share/doc/$PKGNAM-$VERSION/
+install -m644 $CWD/$PKGNAM.SlackBuild $PKG/usr/share/doc/$PKGNAM-$VERSION/
+
+# Strip binaries
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+# Compress the manual pages
+find $PKG/usr/share/man -type f -exec gzip -9 {} \;
+for i in $( find $PKG/usr/share/man -type l ); do
+	ln -s $( readlink $i ).gz $i.gz
+	rm $i
+done
+
+# Create the package
+mkdir -p $PKG/install
+install -m644 $CWD/slack-desc $PKG/install/slack-desc
+
+cd $PKG
+/sbin/makepkg -l y -c n $TMP/$PKGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}

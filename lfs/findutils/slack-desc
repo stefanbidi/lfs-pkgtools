@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description. Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in. You must
+# make exactly 11 lines for the formatting to be correct. It's also
+# customary to leave one space after the ':'.
+
+         |-----handy-ruler------------------------------------------------------|
+findutils: findutils (utilities to locate files)
+findutils:
+findutils: The Findutils package contains programs to find files. These programs
+findutils: are provided to recursively search through a directory tree and to
+findutils: create, maintain, and search a database (often faster than the
+findutils: recusive find, but unreliable if the database has not been recently
+findutils: updated).
+findutils:
+findutils: Homepage: https://www.gnu.org/software/findutils/
+findutils:
+findutils:

@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description. Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in. You must
+# make exactly 11 lines for the formatting to be correct. It's also
+# customary to leave one space after the ':'.
+
+    |-----handy-ruler------------------------------------------------------|
+gdbm: gdbm (GNU database manager)
+gdbm:
+gdbm: The GDBM package contains the GNU Database Manager. It is a library
+gdbm: of database functions that use extensible hashing and work similar to
+gdbm: the standard UNIX dbm. The library provides primitives for storing
+gdbm: key/data pairs, searching and retrieving the data by its key and
+gdbm: deleting a key along with its data.
+gdbm:
+gdbm: Homepage: https://www.gnu.org/software/gdbm/
+gdbm:
+gdbm:

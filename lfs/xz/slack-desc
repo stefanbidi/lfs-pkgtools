@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description. Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in. You must
+# make exactly 11 lines for the formatting to be correct. It's also
+# customary to leave one space after the ':'.
+
+  |-----handy-ruler------------------------------------------------------|
+xz: xz (
+xz:
+xz: The Xz package contains programs for compressing and decompressing
+xz: files. It provides capabilities for the lzma and the newer xz
+xz: compression formats. Compressing text files with xz yields a better
+xz: compression percentage than with the traditional gzip or bzip2
+xz: commands.
+xz:
+xz: Homepage: https://tukaani.org/xz
+xz:
+xz:

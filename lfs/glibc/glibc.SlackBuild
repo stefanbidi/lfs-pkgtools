@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# Linux From Scratch build script for glibc
+
+# Copyright 2018 Stefan Bidigaray
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+PKGNAM=glibc
+VERSION=2.28
+BUILD=1
+TAG=${TAG:-lfs}
+
+NUMJOBS=${NUMJOBS:-"-j$( expr $( nproc ) + 1 )"}
+
+ARCH=$( uname -m )
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp}
+PKG=$TMP/package-$PKGNAM
+
+set -e
+
+rm -rf $PKG
+mkdir -p $TMP $PKG
+cd $TMP
+rm -rf $PKGNAM-$VERSION
+tar xvf $CWD/$PKGNAM-$VERSION.tar.gz
+
+cd $PKGNAM-$VERSION
+chown -R root:root .
+find -L $TMP/$PKGNAM-$VERSION \
+	\( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 \
+	-o -perm 555 -o -perm 511 \) -exec chmod 755 {} \; -o \
+	\( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 \
+	-o -perm 444 -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+# Prepare the package
+patch -Np1 -i $CWD/glibc-2.28-fhs-1.patch
+if [ "x$USE_TMP_TOOLS" = "xyes" ]; then
+	ln -sfv /tools/lib/gcc /usr/lib
+	case $( uname -m ) in
+		i?86)	GCC_INCDIR=/usr/lib/gcc/$( uname -m )-pc-linux-gnu/8.2.0/include
+			ln -sfv ld-linux.so.2 /lib/ld-lsb.so.3
+		;;
+		x86_64)	GCC_INCDIR=/usr/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include
+			ln -sfv ../lib/ld-linux-x86-64.so.2 /lib64
+			ln -sfv ../lib/ld-linux-x86-64.so.2 /lib64/ld-lsb-x86-64.so.3
+		;;
+	esac
+
+	rm -f /usr/include/limits.h
+fi
+
+# Build the package
+mkdir -v build
+cd build
+CC="gcc -isystem $GCC_INCDIR -isystem /usr/include" \
+../configure --prefix=/usr \
+	--disable-werror \
+	--enable-kernel=3.2 \
+	--enable-stack-protector=strong \
+	libc_cv_slibdir=/lib
+unset GCC_INCDIR
+make $NUMJOBS
+
+# Test the results
+make check || true
+
+# Install the package
+if [ "x$USE_TMP_TOOLS" = "xyes" ]; then
+	touch /etc/ld.so.conf
+	sed '/test-installation/s@$(PERL)@echo not running@' -i ../Makefile
+fi
+make install DESTDIR=$PKG
+
+mkdir -pv $PKG/etc
+cp -v ../nscd/nscd.conf $PKG/etc/nscd.conf
+mkdir -pv $PKG/var/cache/nscd
+
+cat > $PKG/etc/nsswitch.conf << "EOF"
+# Begin /etc/nsswitch.conf
+
+passwd: files
+group: files
+shadow: files
+
+hosts: files dns
+networks: files
+
+protocols: files
+services: files
+ethers: files
+rpc: files
+
+# End /etc/nsswitch.conf
+EOF
+
+cat > $PKG/etc/ld.so.conf << "EOF"
+# Begin /etc/ld.so.conf
+
+/usr/local/lib
+/opt/lib
+
+include /etc/ld.so.conf.d/*.conf
+
+# End /etc/ld.so.conf
+EOF
+
+mkdir -pv $PKG/etc/ld.so.conf.d
+
+# Strip binaries
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+# Compress the manual pages
+find $PKG/usr/share/man -type f -exec gzip -9 {} \;
+for i in $( find $PKG/usr/share/man -type l ); do
+	ln -s $( readlink $i ).gz $i.gz
+	rm $i
+done
+
+# Include documentation files
+install -dm755 $PKG/usr/share/doc/$PKGNAM-$VERSION
+install -m644 ChangeLog COPYING README \
+	$PKG/usr/share/doc/$PKGNAM-$VERSION/
+install -m644 $CWD/$PKGNAM.SlackBuild $PKG/usr/share/doc/$PKGNAM-$VERSION/
+
+# Create the package
+mkdir -p $PKG/install
+install -m644 $CWD/slack-desc $PKG/install/slack-desc
+
+cd $PKG
+/sbin/makepkg -l y -c n $TMP/$PKGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}
